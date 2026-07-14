@@ -1,13 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db, googleProvider } from '../firebase/config';
-import { 
-  signInWithPopup, 
-  signOut, 
-  onAuthStateChanged, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
-  sendPasswordResetEmail
-} from 'firebase/auth';
+import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 const AuthContext = createContext();
@@ -18,21 +11,18 @@ export const AuthProvider = ({ children }) => {
 
   const isAdmin = user?.email === "promptforge.oficial.ia@gmail.com";
 
-  const syncUser = async (u) => {
-    if (!u) return;
-    await setDoc(doc(db, "users", u.uid), {
-      uid: u.uid,
-      name: u.displayName,
-      email: u.email,
-      photoURL: u.photoURL,
-      lastAccess: serverTimestamp(),
-    }, { merge: true });
-  };
-
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
+    const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
-      if (u) syncUser(u);
+      if (u) {
+        await setDoc(doc(db, "users", u.uid), {
+          uid: u.uid,
+          name: u.displayName,
+          email: u.email,
+          photoURL: u.photoURL,
+          lastAccess: serverTimestamp(),
+        }, { merge: true });
+      }
       setLoading(false);
     });
     return () => unsub();
