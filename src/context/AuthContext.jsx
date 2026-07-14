@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db, googleProvider } from '../firebase/config';
-import { 
-  signInWithPopup, 
-  signOut, 
-  onAuthStateChanged, 
-  signInWithEmailAndPassword, 
+import {
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail
 } from 'firebase/auth';
@@ -18,17 +18,23 @@ export const AuthProvider = ({ children }) => {
 
   const isAdmin = user?.email === "promptforge.oficial.ia@gmail.com";
 
-  // Sincronización Automática con Firestore
+  // Sincronización con Firestore
   const syncUserToFirestore = async (firebaseUser) => {
     if (!firebaseUser) return;
+
     const userRef = doc(db, "users", firebaseUser.uid);
-    await setDoc(userRef, {
-      uid: firebaseUser.uid,
-      name: firebaseUser.displayName || "Usuario de Forja",
-      email: firebaseUser.email,
-      photoURL: firebaseUser.photoURL || "https://via.placeholder.com/150",
-      lastAccess: serverTimestamp(),
-    }, { merge: true });
+
+    await setDoc(
+      userRef,
+      {
+        uid: firebaseUser.uid,
+        name: firebaseUser.displayName || "Usuario de Forja",
+        email: firebaseUser.email,
+        photoURL: firebaseUser.photoURL || "https://via.placeholder.com/150",
+        lastAccess: serverTimestamp(),
+      },
+      { merge: true }
+    );
   };
 
   useEffect(() => {
@@ -39,20 +45,43 @@ export const AuthProvider = ({ children }) => {
       } else {
         setUser(null);
       }
+
       setLoading(false);
     });
+
     return () => unsubscribe();
   }, []);
 
   const loginGoogle = () => signInWithPopup(auth, googleProvider);
-  const loginEmail = (email, pass) => signInWithEmailAndPassword(auth, email, pass);
-  const registerEmail = (email, pass) => createUserWithEmailAndPassword(auth, email, pass);
-  const resetPassword = (email) => sendPasswordResetEmail(auth, email);
+
+  const loginEmail = (email, pass) =>
+    signInWithEmailAndPassword(auth, email, pass);
+
+  const registerEmail = (email, pass) =>
+    createUserWithEmailAndPassword(auth, email, pass);
+
+  const resetPassword = (email) =>
+    sendPasswordResetEmail(auth, email);
+
   const logout = () => signOut(auth);
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin, loginGoogle, loginEmail, registerEmail, resetPassword, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        isAdmin,
+        loginGoogle,
+        loginEmail,
+        registerEmail,
+        resetPassword,
+        logout,
+      }}
+    >
       {!loading && children}
     </AuthContext.Provider>
   );
 };
+
+// Hook personalizado
+export const useAuth = () => useContext(AuthContext);
