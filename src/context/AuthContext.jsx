@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db, googleProvider } from '../firebase/config';
-import {
-  signInWithPopup,
-  signOut,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
+import { 
+  signInWithPopup, 
+  signOut, 
+  onAuthStateChanged, 
+  signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
   sendPasswordResetEmail
 } from 'firebase/auth';
@@ -18,70 +18,34 @@ export const AuthProvider = ({ children }) => {
 
   const isAdmin = user?.email === "promptforge.oficial.ia@gmail.com";
 
-  // Sincronización con Firestore
-  const syncUserToFirestore = async (firebaseUser) => {
-    if (!firebaseUser) return;
-
-    const userRef = doc(db, "users", firebaseUser.uid);
-
-    await setDoc(
-      userRef,
-      {
-        uid: firebaseUser.uid,
-        name: firebaseUser.displayName || "Usuario de Forja",
-        email: firebaseUser.email,
-        photoURL: firebaseUser.photoURL || "https://via.placeholder.com/150",
-        lastAccess: serverTimestamp(),
-      },
-      { merge: true }
-    );
+  const syncUser = async (u) => {
+    if (!u) return;
+    await setDoc(doc(db, "users", u.uid), {
+      uid: u.uid,
+      name: u.displayName,
+      email: u.email,
+      photoURL: u.photoURL,
+      lastAccess: serverTimestamp(),
+    }, { merge: true });
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        setUser(firebaseUser);
-        syncUserToFirestore(firebaseUser);
-      } else {
-        setUser(null);
-      }
-
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      if (u) syncUser(u);
       setLoading(false);
     });
-
-    return () => unsubscribe();
+    return () => unsub();
   }, []);
 
-  const loginGoogle = () => signInWithPopup(auth, googleProvider);
-
-  const loginEmail = (email, pass) =>
-    signInWithEmailAndPassword(auth, email, pass);
-
-  const registerEmail = (email, pass) =>
-    createUserWithEmailAndPassword(auth, email, pass);
-
-  const resetPassword = (email) =>
-    sendPasswordResetEmail(auth, email);
-
+  const login = () => signInWithPopup(auth, googleProvider);
   const logout = () => signOut(auth);
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        isAdmin,
-        loginGoogle,
-        loginEmail,
-        registerEmail,
-        resetPassword,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={{ user, loading, isAdmin, login, logout }}>
       {!loading && children}
     </AuthContext.Provider>
   );
 };
 
-// Hook personalizado
 export const useAuth = () => useContext(AuthContext);
