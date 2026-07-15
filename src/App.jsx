@@ -1,5 +1,5 @@
 import React, { Suspense, useState, useEffect, useRef } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Points, PointMaterial, Preload } from '@react-three/drei';
@@ -8,8 +8,7 @@ import {
   Sparkles, Zap, ShieldCheck, ArrowRight, ShoppingCart, Search, 
   Layout, User, LogOut, Crown, Star, Download, ChevronRight, 
   Lock, Rocket, Globe, Radar, Activity, Target, Radio, Cpu, 
-  Library, Box, Share2, Layers, Terminal, MousePointer2, Mail, Heart, FileText, Settings, Eye,
-  Wifi, Gauge, Crosshair, BarChart3, Binary
+  Library, Box, FileText, Settings, Eye, Mail
 } from 'lucide-react';
 import { 
   FaInstagram, FaTiktok, FaTwitter, FaDiscord, 
@@ -22,12 +21,12 @@ import { db } from './firebase/config';
 import { collection, onSnapshot, query, orderBy, doc, setDoc, arrayUnion } from 'firebase/firestore';
 import { allProducts } from './data/products';
 
-// --- [ 1. MOTOR ESPACIAL INTERACTIVO ] ---
+// --- [ 1. EL MOTOR ESPACIAL INTERACTIVO ] ---
 function StarField({ speed = 0.05 }) {
   const ref = useRef();
   const [positions] = useState(() => {
-    const p = new Float32Array(25000 * 3);
-    for (let i = 0; i < 25000; i++) p[i] = (Math.random() - 0.5) * 20;
+    const p = new Float32Array(20000 * 3);
+    for (let i = 0; i < 20000; i++) p[i] = (Math.random() - 0.5) * 20;
     return p;
   });
   useFrame((state, delta) => {
@@ -51,111 +50,89 @@ const SpacePortal = ({ isWarping }) => (
   </div>
 );
 
-// --- [ 2. PANELES HUD HD ] ---
-const HUD_HD = () => {
-  const [time, setTime] = useState(new Date().toLocaleTimeString());
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date().toLocaleTimeString()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  return (
-    <div className="fixed inset-0 pointer-events-none z-[60] hidden xl:block p-10 font-mono">
-      <div className="absolute top-10 left-10 w-32 h-32 border-t-2 border-l-2 border-cyan-500/40 rounded-tl-[3rem] shadow-[0_0_20px_rgba(34,211,238,0.1)]" />
-      <div className="absolute top-10 right-10 w-32 h-32 border-t-2 border-r-2 border-purple-500/40 rounded-tr-[3rem]" />
-      <div className="absolute bottom-10 left-10 w-32 h-32 border-b-2 border-l-2 border-purple-500/40 rounded-bl-[3rem]" />
-      <div className="absolute bottom-10 right-10 w-32 h-32 border-b-2 border-r-2 border-cyan-500/40 rounded-br-[3rem]" />
-
-      <motion.div initial={{ x: -100 }} animate={{ x: 0 }} className="absolute top-1/4 left-10 w-64 glass-morphism p-6 rounded-[2rem] border border-white/10 space-y-6">
-        <div className="flex items-center gap-3 border-b border-white/10 pb-4 text-cyan-400">
-          <Cpu size={14} className="animate-pulse" />
-          <span className="text-[10px] font-black uppercase tracking-[0.3em]">System_Core</span>
-        </div>
-        <HUDBar label="WARP_DRIVE" value={92} color="bg-purple-500" />
-        <HUDBar label="AI_SYNC" value={98} color="bg-cyan-400" />
-      </motion.div>
-
-      <motion.div initial={{ x: 100 }} animate={{ x: 0 }} className="absolute top-1/4 right-10 w-64 glass-morphism p-6 rounded-[2rem] border border-white/10 space-y-6 text-right">
-        <div className="flex items-center justify-end gap-3 border-b border-white/10 pb-4 text-purple-400">
-          <span className="text-[10px] font-black uppercase tracking-[0.3em]">Tactical_Data</span>
-          <Radar size={14} className="animate-spin" />
-        </div>
-        <p className="text-[10px] text-white font-bold tracking-widest">TIME: {time}</p>
-        <p className="text-[8px] text-slate-500 uppercase font-black">Status: Forging_Active</p>
-      </motion.div>
-    </div>
-  );
-};
-
-const HUDBar = ({ label, value, color }) => (
-  <div className="space-y-2 text-left">
-    <div className="flex justify-between text-[8px] font-black text-slate-500 uppercase"><span>{label}</span><span>{value}%</span></div>
-    <div className="h-1 bg-white/5 rounded-full overflow-hidden"><motion.div initial={{ width: 0 }} animate={{ width: `${value}%` }} className={`h-full ${color}`} /></div>
+// --- [ 2. HUD HD LATERAL (TELEMETRÍA) ] ---
+const HUD_HD = () => (
+  <div className="fixed inset-0 pointer-events-none z-[60] hidden xl:block p-10">
+    <div className="absolute top-10 left-10 w-32 h-32 border-t-2 border-l-2 border-cyan-500/40 rounded-tl-[3rem]" />
+    <div className="absolute top-10 right-10 w-32 h-32 border-t-2 border-r-2 border-purple-500/40 rounded-tr-[3rem]" />
+    <motion.div initial={{ x: -100 }} animate={{ x: 0 }} className="absolute top-1/3 left-10 w-64 glass-morphism p-6 rounded-[2rem] border border-white/10 space-y-4">
+      <div className="flex items-center gap-3 border-b border-white/10 pb-4 text-cyan-400 font-black uppercase text-[10px] tracking-widest"><Cpu size={14}/> System_Core</div>
+      <div className="space-y-2">
+        <div className="flex justify-between text-[8px] font-black text-slate-500">POWER <span className="text-white">98%</span></div>
+        <div className="h-1 bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-purple-500 w-[98%]" /></div>
+      </div>
+    </motion.div>
   </div>
 );
 
-// --- [ 3. PROTECCIÓN Y LÓGICA ] ---
-const PrivateRoute = ({ children, adminOnly = false }) => {
-  const { user, loading, isAdmin } = useAuth();
-  if (loading) return <div className="h-screen bg-[#000105] flex items-center justify-center font-black text-purple-500 italic animate-pulse">SYNCING_NUCLEUS...</div>;
-  if (!user) return <Navigate to="/login" />;
-  if (adminOnly && !isAdmin) return <Navigate to="/" />;
-  return children;
-};
-
-// --- [ 4. VISTAS PRINCIPALES ] ---
+// --- [ 3. VISTA HOME (REDISEÑADA CON REDES SOCIALES) ] ---
 const HomeView = ({ onAction }) => {
   const navigate = useNavigate();
   return (
-    <div className="relative h-screen flex flex-col items-center justify-center text-center px-6">
-      <motion.h1 initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-7xl md:text-[250px] font-black tracking-tighter leading-[0.75] text-white italic select-none uppercase">
-        FORJA TU <br /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-white to-cyan-400 pr-12">IMPERIO.</span>
-      </motion.h1>
-      <button onClick={() => { onAction(true); setTimeout(() => { navigate('/marketplace'); onAction(false); }, 1000); }} className="bg-white text-black font-black px-20 py-8 rounded-full shadow-2xl hover:bg-purple-600 hover:text-white transition-all uppercase text-xs tracking-[0.6em] active:scale-95">INICIAR_WARP_DRIVE</button>
-      <div className="absolute bottom-12 flex gap-8">
-        <Social icon={<FaInstagram/>} link="https://instagram.com" />
-        <Social icon={<FaTiktok/>} link="https://tiktok.com" />
-        <Social icon={<FaTwitter/>} link="https://twitter.com" />
-        <Social icon={<FaDiscord/>} link="https://discord.gg" />
-      </div>
+    <div className="relative min-h-screen">
+      <section className="h-screen flex flex-col items-center justify-center text-center px-6 relative z-10">
+        <motion.h1 initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-7xl md:text-[220px] font-black tracking-tighter leading-[0.75] text-white italic select-none uppercase">
+          FORJA TU <br /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-white to-cyan-400 pr-12">IMPERIO.</span>
+        </motion.h1>
+        <button onClick={() => { onAction(true); setTimeout(() => { navigate('/marketplace'); onAction(false); }, 1000); }} className="bg-white text-black font-black px-20 py-8 rounded-full shadow-2xl hover:bg-purple-600 hover:text-white transition-all duration-700 uppercase text-xs tracking-[0.6em] active:scale-95">INICIAR_VIAJE_ESTELAR</button>
+      </section>
+
+      {/* SECCIÓN REDES SOCIALES (PARA QUE NO QUEDE NEGRO AL BAJAR) */}
+      <section className="py-40 px-10 relative z-10 bg-black/20 backdrop-blur-3xl border-t border-white/5">
+        <div className="max-w-7xl mx-auto text-center space-y-24">
+          <h2 className="text-5xl font-black italic uppercase tracking-tighter">Conexión_Global</h2>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
+            <Social icon={<FaInstagram/>} label="Instagram" /><Social icon={<FaTiktok/>} label="TikTok" /><Social icon={<FaTwitter/>} label="X.com" /><Social icon={<FaDiscord/>} label="Discord" /><Social icon={<FaGithub/>} label="GitHub" />
+          </div>
+        </div>
+      </section>
     </div>
   );
 };
 
-const Social = ({ icon, link }) => (
-  <a href={link} target="_blank" className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-xl text-slate-400 hover:text-purple-400 hover:scale-110 transition-all backdrop-blur-xl">
-    {icon}
-  </a>
+const Social = ({ icon, label }) => (
+  <motion.a href="#" className="p-16 rounded-[4rem] bg-white/[0.01] border border-white/5 backdrop-blur-2xl flex flex-col items-center gap-6 group hover:bg-purple-600 transition-all duration-500">
+    <div className="text-6xl text-slate-700 group-hover:text-white transition-colors">{icon}</div>
+    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 group-hover:text-white">{label}</span>
+  </motion.a>
 );
 
+// --- [ 4. MARKETPLACE (CON BUSCADOR Y FIREBASE) ] ---
 const MarketplaceView = () => {
   const [search, setSearch] = useState('');
   const [products, setProducts] = useState([]);
-  const { login, user } = useAuth();
+  const { user, login } = useAuth();
 
   useEffect(() => {
     const q = query(collection(db, "product"), orderBy("createdAt", "desc"));
-    return onSnapshot(q, (snapshot) => setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))));
+    return onSnapshot(q, (snap) => setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
   }, []);
 
   const handleBuy = async (p) => {
     if(!user) return login();
     await setDoc(doc(db, "users", user.uid), { purchases: arrayUnion({...p, purchasedAt: new Date().toISOString()})}, {merge: true});
-    alert("¡Adquirido!");
+    alert("¡Adquirido! Revisa tu Bóveda.");
   };
 
   return (
     <div className="pt-40 pb-40 px-10 relative z-10 max-w-7xl mx-auto min-h-screen">
-      <header className="mb-24 space-y-12 text-white">
-        <h2 className="text-7xl md:text-[150px] font-black tracking-tighter italic uppercase leading-none">Market_<span className="text-purple-600">Archive.</span></h2>
-        <div className="relative max-w-2xl"><Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-600" size={24} /><input type="text" placeholder="ACCESS_DATABASE..." className="w-full bg-white/[0.03] border border-white/10 p-8 pl-16 rounded-[2.5rem] outline-none focus:border-purple-500 text-white font-black text-xl backdrop-blur-3xl transition-all" onChange={(e) => setSearch(e.target.value)} /></div>
+      <header className="mb-24 space-y-12">
+        <h2 className="text-7xl md:text-9xl font-black text-white tracking-tighter italic uppercase leading-none uppercase">Market_<span className="text-purple-600">Archive.</span></h2>
+        {/* BARRA DE BÚSQUEDA */}
+        <div className="relative max-w-2xl">
+          <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-600" size={24} />
+          <input type="text" placeholder="ACCESS_DATABASE..." className="w-full bg-white/[0.03] border border-white/10 p-8 pl-16 rounded-[2.5rem] outline-none focus:border-purple-500 text-white font-black text-xl backdrop-blur-3xl transition-all" onChange={(e) => setSearch(e.target.value)} />
+        </div>
       </header>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
-        {products.filter(p => p.name?.toLowerCase().includes(search.toLowerCase())).map((p) => (
-          <motion.div key={p.id} whileHover={{ y: -10 }} className="group p-8 rounded-[3.5rem] bg-white/[0.02] border border-white/5 backdrop-blur-2xl hover:border-purple-500/50 transition-all text-white">
+        {(products.length > 0 ? products : allProducts).filter(p => p.name?.toLowerCase().includes(search.toLowerCase())).map((p) => (
+          <motion.div key={p.id} whileHover={{ y: -10 }} className="group p-8 rounded-[3.5rem] bg-white/[0.02] border border-white/5 backdrop-blur-2xl hover:border-purple-500/50 transition-all">
             <img src={p.image} className="h-64 w-full object-cover rounded-[2.5rem] mb-8" alt="p" />
-            <h3 className="font-black text-xl mb-4 italic uppercase">{p.name}</h3>
-            <div className="flex justify-between items-center border-t border-white/5 pt-6"><span className="text-3xl font-black text-purple-400">${p.price}</span><button onClick={() => handleBuy(p)} className="bg-white text-black p-4 rounded-2xl hover:bg-purple-600 hover:text-white transition-all active:scale-90"><ShoppingCart size={22}/></button></div>
+            <h3 className="font-black text-white text-xl mb-4 italic uppercase">{p.name}</h3>
+            <div className="flex justify-between items-center border-t border-white/5 pt-6 text-white uppercase font-black">
+              <span className="text-3xl text-purple-400">${p.price}</span>
+              <button onClick={() => handleBuy(p)} className="p-4 bg-white text-black hover:bg-purple-600 hover:text-white rounded-2xl transition-all"><ShoppingCart size={22}/></button>
+            </div>
           </motion.div>
         ))}
       </div>
@@ -163,9 +140,44 @@ const MarketplaceView = () => {
   );
 };
 
+// --- [ 5. BIBLIOTECA / BÓVEDA (CON BUSCADOR) ] ---
+const LibraryView = () => {
+  const { user } = useAuth();
+  const [purchases, setPurchases] = useState([]);
+  const [search, setSearch] = useState('');
+  useEffect(() => { if (user) return onSnapshot(doc(db, "users", user.uid), (d) => setPurchases(d.data()?.purchases || [])); }, [user]);
+
+  return (
+    <div className="pt-40 pb-40 px-10 relative z-10 max-w-7xl mx-auto min-h-screen">
+      <header className="mb-20 space-y-10">
+        <h2 className="text-6xl md:text-8xl font-black tracking-tighter uppercase italic leading-none text-white">Mi_<span className="text-purple-500">Bóveda.</span></h2>
+        <div className="relative max-w-xl text-white font-black">
+           <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-600" />
+           <input type="text" placeholder="BUSCAR_EN_BOVEDA..." className="w-full bg-white/[0.03] border border-white/10 p-6 pl-16 rounded-[2rem] outline-none focus:border-purple-500 text-white backdrop-blur-3xl" onChange={(e) => setSearch(e.target.value)} />
+        </div>
+      </header>
+      <div className="grid md:grid-cols-2 gap-8">
+        {purchases.filter(p => p.name?.toLowerCase().includes(search.toLowerCase())).map((p, i) => (
+          <div key={i} className="p-10 rounded-[3rem] bg-slate-900/60 border border-white/5 flex items-center justify-between group">
+            <div className="flex gap-6 items-center text-white"><img src={p.image} className="w-20 h-20 rounded-3xl object-cover" alt="p" /><h4 className="font-black text-lg uppercase">{p.name}</h4></div>
+            <button onClick={() => p.downloadUrl ? window.open(p.downloadUrl) : alert("Sin link.")} className="p-5 bg-white/5 hover:bg-purple-600 rounded-3xl transition-all shadow-xl text-white"><Download size={24}/></button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// --- [ 6. ESTRUCTURA APP ] ---
+const PrivateRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  return user ? children : <Navigate to="/login" />;
+};
+
 export default function App() {
   const [isWarping, setIsWarping] = useState(false);
-  const { user, login } = useAuth();
+  const { user, login, logout, isAdmin } = useAuth();
 
   return (
     <AuthProvider>
@@ -175,19 +187,30 @@ export default function App() {
           <HUD_HD />
           <nav className="fixed top-0 w-full z-[100] h-24 flex items-center px-10 border-b border-white/5 backdrop-blur-xl bg-black/10">
             <div className="max-w-[1800px] mx-auto w-full flex justify-between items-center text-white">
-              <Link to="/" className="text-3xl font-black italic tracking-tighter flex items-center gap-4 uppercase"><div className="w-10 h-10 bg-purple-600 rounded-xl" />PromptForge</Link>
-              <div className="hidden md:flex gap-12 text-[10px] font-black uppercase tracking-[0.4em] text-slate-500"><Link to="/" className="hover:text-white transition-all">Home</Link><Link to="/marketplace" className="hover:text-white transition-all">Market</Link></div>
-              {user ? <Link to="/dashboard" className="w-12 h-12 rounded-2xl border-2 border-purple-500 overflow-hidden"><img src={user.photoURL} alt="p" /></Link> : <button onClick={login} className="bg-white text-black px-10 py-3 rounded-full text-[10px] font-black shadow-2xl uppercase">VIP</button>}
+              <Link to="/" className="text-3xl font-black italic tracking-tighter flex items-center gap-4 uppercase"><div className="w-10 h-10 bg-gradient-to-tr from-purple-600 to-cyan-400 rounded-xl" />PromptForge</Link>
+              <div className="hidden md:flex gap-12 text-[10px] font-black uppercase tracking-[0.4em] text-slate-500">
+                <Link to="/" className="hover:text-white transition-all">Home</Link>
+                <Link to="/marketplace" className="hover:text-purple-400">Market</Link>
+                <Link to="/biblioteca" className="hover:text-cyan-400">Bóveda</Link>
+              </div>
+              {user ? <Link to="/dashboard" className="w-14 h-14 rounded-3xl border-2 border-purple-500 overflow-hidden shadow-2xl"><img src={user.photoURL} alt="u" /></Link> : <button onClick={login} className="bg-white text-black px-10 py-3 rounded-full text-[10px] font-black hover:bg-purple-600 hover:text-white transition-all uppercase">VIP</button>}
             </div>
           </nav>
+
           <AnimatePresence mode="wait">
             <Routes>
               <Route path="/" element={<HomeView onAction={setIsWarping} />} />
               <Route path="/marketplace" element={<MarketplaceView />} />
-              <Route path="/login" element={<div className="h-screen flex items-center justify-center font-black text-7xl uppercase italic">Redirecting...</div>} />
-              <Route path="/dashboard" element={<PrivateRoute><div className="h-screen flex items-center justify-center font-black text-7xl uppercase italic">User_Vault_Locked</div></PrivateRoute>} />
+              <Route path="/biblioteca" element={<PrivateRoute><LibraryView /></PrivateRoute>} />
+              <Route path="/dashboard" element={<PrivateRoute><div className="h-screen flex flex-col items-center justify-center font-black text-6xl italic uppercase"><h3 className="mb-10 text-white">User_Control_Panel</h3><button onClick={logout} className="text-red-500 text-sm">Cerrar Sesión</button></div></PrivateRoute>} />
+              <Route path="/login" element={<div className="h-screen flex items-center justify-center font-black text-6xl italic uppercase">Redirecting...</div>} />
             </Routes>
           </AnimatePresence>
+
+          <footer className="py-64 border-t border-white/5 text-center relative z-10 bg-black/40">
+            <div className="text-9xl md:text-[300px] font-black tracking-tighter mb-12 italic text-slate-900 select-none uppercase opacity-10">PromptForge</div>
+            <p className="text-slate-800 text-[12px] font-bold uppercase tracking-[2em]">Build_the_Future_with_IA</p>
+          </footer>
         </div>
       </Router>
     </AuthProvider>
